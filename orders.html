@@ -113,64 +113,19 @@
           </div>
         </div>
 
-        <!-- ANIMATED LIVE GPS DELIVERY ROUTE MAP -->
-        <div class="live-map-card" id="liveMapCard">
-          <div class="map-viewport">
-            <svg class="map-route-svg" viewBox="0 0 400 155" preserveAspectRatio="none">
-              <!-- Route background & animated dashed active path -->
-              <path d="M 60 115 Q 160 125, 200 80 T 340 40" class="route-bg-line" />
-              <path d="M 60 115 Q 160 125, 200 80 T 340 40" class="route-main-line" />
-            </svg>
-
-            <!-- Origin Marker: Kitchen -->
-            <div class="map-marker origin" title="Gourmet Bites Kitchen (Smouha)">
-              <div class="marker-pin"><i class="fa-solid fa-utensils"></i></div>
-              <span class="marker-label">Kitchen</span>
-            </div>
-
-            <!-- Animated Courier Scooter -->
-            <div class="map-scooter-tracker" id="mapScooterTracker">
-              <div class="scooter-bubble">
-                <i class="fa-solid fa-motorcycle"></i>
-                <div class="radar-ping"></div>
-              </div>
-            </div>
-
-            <!-- Destination Marker: Customer -->
-            <div class="map-marker destination" title="Customer Delivery Location">
-              <div class="marker-pin"><i class="fa-solid fa-location-dot"></i></div>
-              <span class="marker-label" id="mapDestLabel">Home</span>
+        <!-- ETA + Advance Stage (compact) -->
+        <div class="eta-box" style="justify-content: space-between;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="eta-icon"><i class="fa-solid fa-stopwatch"></i></div>
+            <div class="eta-info">
+              <span>Estimated Arrival</span>
+              <strong id="activeEta">15 - 25 min</strong>
             </div>
           </div>
-
-          <div class="map-telemetry-bar">
-            <div class="telemetry-gps">
-              <i class="fa-solid fa-satellite-dish"></i>
-              <span id="telemetryStatus">GPS Live: On Albert Al Awal St (1.2 km away)</span>
-            </div>
-            <span class="telemetry-speed" id="telemetrySpeed">35 km/h</span>
-          </div>
-        </div>
-
-        <!-- Real-Time Stage Controls & Fast-Forward -->
-        <div class="live-simulation-bar">
-          <div class="sim-label">
-            <span>LIVE TRACKER SIMULATOR</span>
-            <strong id="simStatusHeadline">Stage 4 of 5: Out for Delivery 🛵</strong>
-          </div>
-          <button class="sim-advance-btn" id="simAdvanceBtn" onclick="advanceLiveStage()">
-            <span>Advance Stage</span>
+          <button class="sim-advance-btn" id="simAdvanceBtn" onclick="advanceLiveStage()" style="flex-shrink:0;">
+            <span id="simStatusHeadline">Advance</span>
             <i class="fa-solid fa-forward-step"></i>
           </button>
-        </div>
-
-        <!-- Estimated Time Banner -->
-        <div class="eta-box">
-          <div class="eta-icon"><i class="fa-solid fa-stopwatch"></i></div>
-          <div class="eta-info">
-            <span>Estimated Arrival Time</span>
-            <strong id="activeEta">15 - 25 Minutes (Arriving ~4:45 PM)</strong>
-          </div>
         </div>
 
         <!-- Courier Information -->
@@ -209,13 +164,11 @@
         </div>
 
         <!-- Cancel Order Section -->
-        <div class="cancel-order-box">
-          <div class="cancel-policy-note" id="cancelPolicyNote">
-            <i class="fa-solid fa-circle-info"></i> Note: Orders cannot be cancelled once cooking starts or driver departs.
-          </div>
+        <div class="cancel-order-box" style="border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px;">
           <button class="cancel-order-btn" id="cancelOrderBtn" onclick="AppState.cancelActiveOrder()">
             Cancel Order
           </button>
+          <p class="cancel-policy-note" id="cancelPolicyNote" style="margin-top:6px; text-align:center; font-size:11px;"></p>
         </div>
 
       </article>
@@ -496,21 +449,7 @@
 
       // Update ETA
       document.getElementById('activeEta').textContent = etaText;
-      document.getElementById('simStatusHeadline').textContent = headlineText;
-
-      // Update Telemetry
-      const telemStatus = document.getElementById('telemetryStatus');
-      if (telemStatus) {
-        telemStatus.textContent = isAr ? ({
-          1: 'تمت طباعة بون الطلب في مطبخ سموحة 📋',
-          2: 'المطبخ راجع الطلب وبدأ تجهيز المكونات',
-          3: 'الشيف محمود يقوم بتسوية اللحم وتغليف الوجبة',
-          4: 'تتبع GPS مباشر: في شارع ألبرت الأول (على بعد 1.2 كم)',
-          5: 'وصل المندوب إلى مدخل العمارة'
-        }[step] || cfg.telemetry) : cfg.telemetry;
-      }
-      const telemSpeed = document.getElementById('telemetrySpeed');
-      if (telemSpeed) telemSpeed.textContent = cfg.speed;
+      document.getElementById('simStatusHeadline').textContent = isAr ? 'تقديم المرحلة' : (step >= 5 ? 'Rate ⭐' : 'Advance');
 
       // Update Stepper Labels
       if (isAr) {
@@ -579,21 +518,22 @@
         cancelBtn.disabled = true;
         cancelBtn.classList.add('disabled');
         cancelBtn.textContent = isAr ? 'لا يمكن الإلغاء حالياً' : 'Cancellation Unavailable';
-        cancelPolicy.style.color = '#ef4444';
+        if (cancelPolicy) cancelPolicy.textContent = isAr ? 'لا يمكن الإلغاء بعد بدء التحضير.' : 'Cannot cancel after cooking starts.';
       } else {
         cancelBtn.disabled = false;
         cancelBtn.classList.remove('disabled');
         cancelBtn.textContent = isAr ? 'إلغاء الطلب' : 'Cancel Order';
+        if (cancelPolicy) cancelPolicy.textContent = '';
       }
 
-      // Advance Button Label
+      // Advance Button
       const advBtn = document.getElementById('simAdvanceBtn');
       if (advBtn) {
         if (step >= 5) {
-          advBtn.innerHTML = `<span>${isAr ? 'تقييم الطلب ⭐' : 'Rate Order ⭐'}</span>`;
+          advBtn.innerHTML = `<span>${isAr ? 'تقييم ⭐' : 'Rate ⭐'}</span>`;
           advBtn.onclick = () => openRatingModal(order.id);
         } else {
-          advBtn.innerHTML = `<span>${isAr ? 'تقديم المرحلة' : 'Advance Stage'}</span> <i class="fa-solid fa-forward-step"></i>`;
+          advBtn.innerHTML = `<span id="simStatusHeadline">${isAr ? 'تقديم' : 'Advance'}</span> <i class="fa-solid fa-forward-step"></i>`;
           advBtn.onclick = advanceLiveStage;
         }
       }
@@ -646,54 +586,61 @@
 
       document.getElementById('pastOrdersBadge').textContent = past.length;
 
+      if (past.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <h4>${isAr ? 'لا توجد طلبات سابقة' : 'No past orders yet'}</h4>
+            <p>${isAr ? 'طلباتك المكتملة ستظهر هنا.' : 'Your completed orders will appear here.'}</p>
+            <button class="explore-btn" onclick="window.location.href='index.html'">${isAr ? 'استكشف القائمة 🍔' : 'Explore Menu 🍔'}</button>
+          </div>`;
+        return;
+      }
+
       container.innerHTML = past.map(o => `
         <article class="user-order-card past-order-card">
+
+          <!-- Header -->
           <div class="order-card-top">
-            <div>
-              <div class="order-id-row">
-                <h3>${o.id}</h3>
-                <span class="status-chip delivered">${isAr ? 'تم التوصيل بنجاح ✅' : o.status}</span>
-              </div>
-              <p class="order-timestamp">${o.date}</p>
+            <div class="order-id-row">
+              <h3>${o.id}</h3>
+              <span class="status-chip delivered">${isAr ? 'تم التوصيل ✅' : 'Delivered ✅'}</span>
             </div>
+            <p class="order-timestamp">${o.date}</p>
           </div>
 
+          <!-- Items (compact) -->
           <div class="ordered-items-list">
             ${o.items.map(it => {
               const catItem = AppState.catalog[it.id];
-              const itemName = isAr ? (it.nameAr || (catItem && catItem.nameAr) || it.name) : it.name;
+              const name = isAr ? (it.nameAr || (catItem && catItem.nameAr) || it.name) : it.name;
               return `
                 <div class="ordered-item-row">
                   <span class="item-qty">${it.quantity}×</span>
-                  <div class="item-meta">
-                    <strong>${itemName}</strong>
-                    ${it.options ? `<p class="item-specs">${it.options}</p>` : ''}
-                  </div>
+                  <div class="item-meta"><strong>${name}</strong></div>
                   <strong class="item-price">${AppState.formatEGP(it.unitPrice * it.quantity)}</strong>
-                </div>
-              `;
+                </div>`;
             }).join('')}
           </div>
 
-          <div class="past-order-summary-row">
-            <span>${isAr ? 'المجموع المدفوع' : 'Paid Total'}</span>
-            <strong>${AppState.formatEGP(o.total)}</strong>
+          <!-- Total row -->
+          <div class="past-order-footer">
+            <div class="past-total">
+              <span>${isAr ? 'المجموع المدفوع' : 'Paid Total'}</span>
+              <strong>${AppState.formatEGP(o.total)}</strong>
+            </div>
+            <div class="past-actions-group">
+              <button class="rate-order-btn" onclick="openRatingModal('${o.id}')">
+                <i class="fa-regular fa-star"></i>
+                <span>${isAr ? 'تقييم' : 'Rate'}</span>
+              </button>
+              <button class="reorder-btn" onclick='AppState.reorder(${JSON.stringify(o.items)})'>
+                <i class="fa-solid fa-arrow-rotate-right"></i>
+                <span>${isAr ? 'إعادة الطلب' : 'Order Again'}</span>
+              </button>
+            </div>
           </div>
 
-          <div class="past-card-actions">
-            <button class="reorder-btn" onclick='AppState.reorder(${JSON.stringify(o.items)})'>
-              <i class="fa-solid fa-arrow-rotate-right"></i>
-              <span>${isAr ? 'إعادة الطلب' : 'Order Again'}</span>
-            </button>
-            <button class="rate-order-btn" onclick="openRatingModal('${o.id}')">
-              <i class="fa-regular fa-star"></i>
-              <span>${isAr ? 'تقييم الطلب' : 'Rate Order'}</span>
-            </button>
-            <button class="receipt-link-btn" onclick="openReceiptModal('${o.id}')">
-              <i class="fa-solid fa-receipt"></i>
-              <span>${isAr ? 'عرض الفاتورة' : 'View Receipt'}</span>
-            </button>
-          </div>
         </article>
       `).join('');
     }

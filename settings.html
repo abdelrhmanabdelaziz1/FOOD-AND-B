@@ -1,36 +1,27 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Settings & Preferences - Gourmet Bites (EGP)</title>
+  <title>Settings &amp; Preferences - Gourmet Bites (EGP)</title>
 
-  <!-- Modern Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
-
   <link rel="stylesheet" href="style.css" />
-
-  <!-- FontAwesome Icons -->
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-  />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
 
 <body>
-
   <main class="app profile-app">
 
-    <!-- Subpage Top Bar -->
     <header class="subpage-top-bar">
       <a href="profile.html" class="subpage-back-btn" aria-label="Back to Account Hub">
         <i class="fa-solid fa-arrow-left"></i>
       </a>
       <div class="subpage-title-box">
-        <h1>Settings & Preferences</h1>
-        <p>Language, notifications & app controls</p>
+        <h1>Settings &amp; Preferences</h1>
+        <p>Language, notifications &amp; app controls</p>
       </div>
       <button class="icon-circle-btn open-cart-btn" aria-label="Shopping Cart">
         <i class="fa-solid fa-bag-shopping"></i>
@@ -40,197 +31,92 @@
 
     <div class="subpage-container">
 
-      <!-- 1. Bilingual Language Switcher -->
+      <!-- 1. Language -->
       <section class="subpage-card">
         <div class="subpage-card-title">
           <span><i class="fa-solid fa-language" style="color: #0284c7; margin-right: 6px;"></i> App Language / لغة التطبيق</span>
         </div>
-
-        <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 14px;">
-          Select your preferred display language. Arabic enables complete Right-to-Left (RTL) interface and Egyptian currency formatting.
-        </p>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px;">
           <button class="btn-lang-choice" id="settingsLangEn" onclick="AppState.setLanguage('en')">
             <span style="font-size: 18px;">🇬🇧</span>
-            <div>
-              <strong>English</strong>
-              <small>Left to Right (LTR)</small>
-            </div>
+            <div><strong>English</strong><small>LTR</small></div>
             <i class="fa-solid fa-circle-check check-lang-icon" style="margin-left: auto;"></i>
           </button>
-
           <button class="btn-lang-choice" id="settingsLangAr" onclick="AppState.setLanguage('ar')">
             <span style="font-size: 18px;">🇪🇬</span>
-            <div>
-              <strong>العربية</strong>
-              <small>من اليمين لليسار (RTL)</small>
-            </div>
+            <div><strong>العربية</strong><small>RTL</small></div>
             <i class="fa-solid fa-circle-check check-lang-icon" style="margin-left: auto;"></i>
           </button>
         </div>
       </section>
 
-      <!-- 2. Notification Preferences -->
+      <!-- 2. All Preferences -->
       <section class="subpage-card">
         <div class="subpage-card-title">
-          <span><i class="fa-solid fa-bell" style="color: #f59e0b; margin-right: 6px;"></i> Push Notifications</span>
+          <span><i class="fa-solid fa-sliders" style="color: var(--primary); margin-right: 6px;"></i> Preferences</span>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 14px;">
-          <!-- Order Milestones -->
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div>
-              <strong style="font-size: 13px; display: block;">Live Order Milestones</strong>
-              <span style="font-size: 11px; color: var(--text-secondary);">Real-time alerts when food is cooking or courier arrives</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" checked onchange="showToast('Order status notifications enabled')" />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <!-- Flash Deals -->
-          <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 12px;">
-            <div>
-              <strong style="font-size: 13px; display: block;">Flash Sales & Exclusive Deals</strong>
-              <span style="font-size: 11px; color: var(--text-secondary);">Notify me of 49% OFF feasts & weekend specials</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" checked onchange="showToast('Deal alert preferences updated')" />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <!-- SMS PINs -->
-          <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 12px;">
-            <div>
-              <strong style="font-size: 13px; display: block;">SMS Delivery PINs</strong>
-              <span style="font-size: 11px; color: var(--text-secondary);">Receive courier delivery PIN via SMS message</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" checked onchange="showToast('SMS preferences updated')" />
-              <span class="slider"></span>
-            </label>
-          </div>
+        <div class="pref-row">
+          <div><strong>Order Notifications</strong><span>Real-time alerts for order status</span></div>
+          <label class="toggle-switch"><input type="checkbox" checked onchange="showToast('Order notifications updated')" /><span class="slider"></span></label>
         </div>
-      </section>
-
-      <!-- 3. Ordering & Packaging Preferences -->
-      <section class="subpage-card">
-        <div class="subpage-card-title">
-          <span><i class="fa-solid fa-bowl-food" style="color: var(--primary); margin-right: 6px;"></i> Dining & Packaging Preferences</span>
+        <div class="pref-row" style="border-top: 1px solid var(--border);">
+          <div><strong>Flash Deals</strong><span>Alerts for sales &amp; weekend specials</span></div>
+          <label class="toggle-switch"><input type="checkbox" checked onchange="showToast('Deal alerts updated')" /><span class="slider"></span></label>
+        </div>
+        <div class="pref-row" style="border-top: 1px solid var(--border);">
+          <div><strong>Include Cutlery</strong><span>Cutlery &amp; napkins with every order</span></div>
+          <label class="toggle-switch"><input type="checkbox" checked onchange="showToast('Cutlery preference updated')" /><span class="slider"></span></label>
+        </div>
+        <div class="pref-row" style="border-top: 1px solid var(--border);">
+          <div><strong>Contactless Delivery</strong><span>Leave at door by default</span></div>
+          <label class="toggle-switch"><input type="checkbox" onchange="showToast('Contactless preference updated')" /><span class="slider"></span></label>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 14px;">
-          <!-- Cutlery -->
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div>
-              <strong style="font-size: 13px; display: block;">Include Cutlery & Napkins</strong>
-              <span style="font-size: 11px; color: var(--text-secondary);">Help reduce plastic waste by turning off if at home</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" checked onchange="showToast('Cutlery preference updated')" />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <!-- Contactless -->
-          <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 12px;">
-            <div>
-              <strong style="font-size: 13px; display: block;">Contactless Delivery Default</strong>
-              <span style="font-size: 11px; color: var(--text-secondary);">Captain leaves order safely at the door and rings bell</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" onchange="showToast('Contactless preference updated')" />
-              <span class="slider"></span>
-            </label>
-          </div>
+        <div style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 2px;">
+          <button type="button" class="btn-secondary" onclick="clearLocalCache()" style="width:100%; padding:11px; font-size:12px; font-weight:700; border:1.5px solid var(--border); background:var(--surface-alt); border-radius:12px; cursor:pointer;">
+            <i class="fa-solid fa-broom"></i> Clear App Cache
+          </button>
+          <p style="font-size:11px; color:var(--text-secondary); margin:10px 0 0; text-align:center;">Gourmet Bites • v3.2.0 • Alexandria, Egypt</p>
         </div>
-      </section>
-
-      <!-- 4. App Cache & Version -->
-      <section class="subpage-card" style="text-align: center;">
-        <button type="button" class="btn-secondary" onclick="clearLocalCache()" style="width: 100%; padding: 12px; font-size: 12px; font-weight: 700; border: 1.5px solid var(--border); background: var(--surface-alt); border-radius: 12px; cursor: pointer;">
-          <i class="fa-solid fa-broom"></i> Clear App Cache & Reset Demo State
-        </button>
-
-        <p style="font-size: 11px; color: var(--text-secondary); margin: 14px 0 0;">
-          Gourmet Bites Web App • Version 3.2.0 • Alexandria, Egypt
-        </p>
       </section>
 
     </div>
 
-    <!-- Bottom Navigation Bar (Home | Orders | Deals | Profile) -->
     <nav class="bottom-nav">
-      <a href="index.html" class="nav-item">
-        <i class="fa-solid fa-house"></i>
-        <span>Home</span>
-      </a>
-
+      <a href="index.html" class="nav-item"><i class="fa-solid fa-house"></i><span>Home</span></a>
       <a href="orders.html" class="nav-item">
-        <div class="nav-icon-container">
-          <i class="fa-solid fa-receipt"></i>
-          <span class="nav-badge">1</span>
-        </div>
+        <div class="nav-icon-container"><i class="fa-solid fa-receipt"></i><span class="nav-badge">1</span></div>
         <span>Orders</span>
       </a>
-
       <a href="deals.html" class="nav-item">
-        <div class="nav-icon-container">
-          <i class="fa-solid fa-tag"></i>
-        </div>
+        <div class="nav-icon-container"><i class="fa-solid fa-tag"></i></div>
         <span>Deals</span>
       </a>
-
-      <a href="profile.html" class="nav-item active">
-        <i class="fa-solid fa-user"></i>
-        <span>Profile</span>
-      </a>
+      <a href="profile.html" class="nav-item active"><i class="fa-solid fa-user"></i><span>Profile</span></a>
     </nav>
-
   </main>
 
   <style>
     .btn-lang-choice {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 14px 12px;
-      border-radius: 14px;
-      border: 1.5px solid var(--border);
-      background: var(--surface-alt);
-      text-align: left;
-      cursor: pointer;
-      transition: all 0.2s ease;
+      display: flex; align-items: center; gap: 10px; padding: 12px 10px;
+      border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface-alt);
+      text-align: left; cursor: pointer; transition: all 0.2s ease;
     }
-    .btn-lang-choice strong {
-      display: block;
-      font-size: 14px;
-      color: var(--text-primary);
+    .btn-lang-choice strong { display: block; font-size: 13px; color: var(--text-primary); }
+    .btn-lang-choice small  { display: block; font-size: 10px; color: var(--text-secondary); }
+    .btn-lang-choice .check-lang-icon { font-size: 16px; color: var(--border); }
+    .btn-lang-choice.active { border-color: var(--primary); background: #fff7ed; }
+    .btn-lang-choice.active .check-lang-icon { color: var(--primary); }
+
+    .pref-row {
+      display: flex; align-items: center; justify-content: space-between; padding: 12px 0;
     }
-    .btn-lang-choice small {
-      display: block;
-      font-size: 10px;
-      color: var(--text-secondary);
-    }
-    .btn-lang-choice .check-lang-icon {
-      font-size: 18px;
-      color: var(--border);
-    }
-    .btn-lang-choice.active {
-      border-color: var(--primary);
-      background: #fff7ed;
-    }
-    .btn-lang-choice.active .check-lang-icon {
-      color: var(--primary);
-    }
+    .pref-row strong { font-size: 13px; display: block; color: var(--text-primary); }
+    .pref-row span   { font-size: 11px; color: var(--text-secondary); display: block; margin-top: 2px; }
   </style>
 
-  <!-- Central App-State Logic -->
   <script src="app-state.js"></script>
-
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const isAr = AppState.getLanguage() === 'ar';
@@ -242,57 +128,39 @@
 
         const backBtn = document.querySelector('.subpage-back-btn');
         if (backBtn) backBtn.setAttribute('aria-label', 'الرجوع للحساب');
-
         const cartBtn = document.querySelector('.open-cart-btn');
         if (cartBtn) cartBtn.setAttribute('aria-label', 'سلة المشتريات');
 
         const titleH1 = document.querySelector('.subpage-title-box h1');
-        const titleP = document.querySelector('.subpage-title-box p');
+        const titleP  = document.querySelector('.subpage-title-box p');
         if (titleH1) titleH1.textContent = 'الإعدادات والتفضيلات';
-        if (titleP) titleP.textContent = 'لغة التطبيق، الإشعارات وتفضيلات التوصيل والتغليف';
+        if (titleP)  titleP.textContent  = 'لغة التطبيق، الإشعارات وتفضيلات التوصيل';
 
         const cardTitles = document.querySelectorAll('.subpage-card-title span');
-        if (cardTitles.length >= 3) {
-          cardTitles[0].innerHTML = `<i class="fa-solid fa-language" style="color: #0284c7; margin-left: 6px;"></i> لغة التطبيق / App Language`;
-          cardTitles[1].innerHTML = `<i class="fa-solid fa-bell" style="color: #f59e0b; margin-left: 6px;"></i> إشعارات التطبيق المباشرة`;
-          cardTitles[2].innerHTML = `<i class="fa-solid fa-bowl-food" style="color: var(--primary); margin-left: 6px;"></i> تفضيلات الوجبة والتغليف`;
-        }
+        if (cardTitles[0]) cardTitles[0].innerHTML = `<i class="fa-solid fa-language" style="color: #0284c7; margin-left: 6px;"></i> لغة التطبيق / App Language`;
+        if (cardTitles[1]) cardTitles[1].innerHTML = `<i class="fa-solid fa-sliders" style="color: var(--primary); margin-left: 6px;"></i> التفضيلات`;
 
-        const langDesc = document.querySelector('.subpage-card p');
-        if (langDesc) {
-          langDesc.textContent = 'اختر لغة العرض المفضلة لديك. تدعم اللغة العربية واجهة كاملة من اليمين إلى اليسار (RTL) مع تنسيق العملة بالجنيه المصري.';
-        }
-
-        const enSmall = document.querySelector('#settingsLangEn small');
-        if (enSmall) enSmall.textContent = 'من اليسار لليمين (LTR)';
-
-        // Notification toggles & packaging preferences text
-        const prefRows = document.querySelectorAll('.subpage-card div[style*="justify-content: space-between"]');
-        const prefTextsAr = [
-          { strong: 'تنبيهات حالة الطلب المباشر', span: 'تنبيهات فورية عند بدء طهي الوجبة أو اقتراب المندوب من باب منزلك' },
-          { strong: 'عروض الفلاش سيل والخصومات الحصرية', span: 'تنبيهي بخصومات تصل إلى 49% على صواني الكومبو وعروض نهاية الأسبوع' },
-          { strong: 'رمز استلام الطلب عبر رسائل SMS', span: 'استلام كود التأكيد السري المكون من 4 أرقام عبر رسالة نصية قصيرة' },
-          { strong: 'إرفاق أدوات الطعام والمناديل', span: 'ساعدنا في الحفاظ على البيئة وتقليل البلاستيك بإلغاء التحديد إذا كنت في المنزل' },
-          { strong: 'التوصيل بدون تلامس كخيار افتراضي', span: 'يقوم المندوب بترك طلبك بأمان عند الباب ورن الجرس' }
+        const rows = document.querySelectorAll('.pref-row');
+        const arTexts = [
+          { strong: 'إشعارات الطلبات',        span: 'تنبيهات فورية لحالة الطلب' },
+          { strong: 'عروض الفلاش',            span: 'تنبيهات للخصومات وعروض الأسبوع' },
+          { strong: 'أدوات الطعام',           span: 'إرفاق ملاعق ومناديل مع كل طلب' },
+          { strong: 'التوصيل بدون تلامس',     span: 'ترك الطلب عند الباب كخيار افتراضي' },
         ];
-
-        prefRows.forEach((row, i) => {
-          if (prefTextsAr[i]) {
+        rows.forEach((row, i) => {
+          if (arTexts[i]) {
             const st = row.querySelector('strong');
             const sp = row.querySelector('span');
-            if (st) st.textContent = prefTextsAr[i].strong;
-            if (sp) sp.textContent = prefTextsAr[i].span;
+            if (st) st.textContent = arTexts[i].strong;
+            if (sp) sp.textContent = arTexts[i].span;
           }
         });
 
-        // App Cache Card
         const clearBtn = document.querySelector('.btn-secondary');
-        if (clearBtn) clearBtn.innerHTML = `<i class="fa-solid fa-broom"></i> مسح ذاكرة التخزين المؤقت وإعادة ضبط التطبيق`;
-
+        if (clearBtn) clearBtn.innerHTML = `<i class="fa-solid fa-broom"></i> مسح ذاكرة التخزين المؤقت`;
         const verP = document.querySelector('.subpage-card:last-child p');
-        if (verP) verP.textContent = 'تطبيق جورميه بايتس • الإصدار 3.2.0 • الإسكندرية، مصر';
+        if (verP) verP.textContent = 'جورميه بايتس • الإصدار 3.2.0 • الإسكندرية، مصر';
 
-        // Bottom Nav
         const navLabels = ['الرئيسية', 'الطلبات', 'العروض', 'حسابي'];
         document.querySelectorAll('.bottom-nav .nav-item span:not(.nav-badge)').forEach((sp, idx) => {
           if (navLabels[idx]) sp.textContent = navLabels[idx];
@@ -302,8 +170,8 @@
 
     function clearLocalCache() {
       const isAr = AppState.getLanguage() === 'ar';
-      const msg = isAr 
-        ? 'هل تريد مسح بيانات التطبيق المؤقتة وإعادة ضبط الحالة الافتراضية؟' 
+      const msg = isAr
+        ? 'هل تريد مسح بيانات التطبيق المؤقتة وإعادة ضبط الحالة الافتراضية؟'
         : 'Clear cached app data and reset to initial state?';
       if (confirm(msg)) {
         localStorage.clear();
@@ -313,6 +181,5 @@
       }
     }
   </script>
-
 </body>
 </html>

@@ -5905,6 +5905,9 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   gap: 14px;
+  flex: 1;
+  min-width: 0;   /* allow flex child to shrink below its content size */
+  overflow: hidden;
 }
 
 .menu-icon-box {
@@ -5928,23 +5931,36 @@ input:checked + .slider:before {
 .menu-icon-box.indigo { background: #e0e7ff; color: #4f46e5; }
 .menu-icon-box.rose { background: #ffe4e6; color: #e11d48; }
 
+.menu-text-box {
+  min-width: 0;   /* allow text to truncate */
+  overflow: hidden;
+}
+
 .menu-text-box h3 {
   font-size: 14px;
   font-weight: 700;
   margin: 0 0 2px;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .menu-text-box p {
   font-size: 11px;
   color: var(--text-secondary);
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .menu-item-right {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;  /* never let the badge/chevron get squeezed */
+  margin-left: 8px;
 }
 
 .menu-item-badge {
@@ -7189,25 +7205,175 @@ input:checked + .slider:before {
   transform: rotate(180deg);
 }
 
-/* DESKTOP CENTERING */
+/* ==========================================================================
+   FULLY RESPONSIVE SYSTEM — Mobile → Tablet → Desktop
+   ========================================================================== */
 
-@media (min-width: 768px) {
+/* ── PHONE ( < 480px ): fills the screen edge-to-edge ───────────────────── */
+@media (max-width: 479px) {
+  .app {
+    max-width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .bottom-nav {
+    max-width: 100%;
+    border-radius: 0;
+  }
+}
+
+/* ── TABLET ( 480px – 1023px ): centred card, breathing room ────────────── */
+@media (min-width: 480px) and (max-width: 1023px) {
+  html, body {
+    min-height: 100%;
+    background: linear-gradient(150deg, #e8ecf2 0%, #d6dbe5 100%);
+  }
+
   body {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 24px 0;
-    min-height: 100vh;
-    background: #dbe0e8;
+    padding: 28px 20px 40px;
   }
 
   .app {
+    width: 100%;
+    max-width: 500px;
     border-radius: 28px;
     overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.14);
+    /* prevent the app card itself from scrolling — let the body scroll */
+    min-height: auto;
   }
 
   .bottom-nav {
     border-bottom-left-radius: 28px;
     border-bottom-right-radius: 28px;
+    max-width: 500px;
+  }
+}
+
+/* ── DESKTOP ( ≥ 1024px ): full-screen layout with centred phone card ────── */
+@media (min-width: 1024px) {
+  html {
+    height: 100%;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 40px 0 60px;
+    background: linear-gradient(145deg, #dde2eb 0%, #c9d0dc 50%, #d5dae4 100%);
+  }
+
+  /* Decorative blobs behind the phone card */
+  body::before,
+  body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::before {
+    width: 520px;
+    height: 520px;
+    background: radial-gradient(circle, rgba(255, 92, 53, 0.09) 0%, transparent 70%);
+    top: -100px;
+    left: -120px;
+  }
+
+  body::after {
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.07) 0%, transparent 70%);
+    bottom: -80px;
+    right: -80px;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    width: 420px;
+    max-width: 420px;
+    min-height: 100vh;
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow:
+      0 32px 80px rgba(0, 0, 0, 0.18),
+      0 0 0 1px rgba(255, 255, 255, 0.55) inset;
+    /* make the app card itself scrollable so the page doesn't grow forever */
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    scrollbar-width: none;      /* Firefox */
+    -ms-overflow-style: none;   /* IE/Edge */
+  }
+
+  .app::-webkit-scrollbar {
+    display: none;              /* Chrome/Safari */
+  }
+
+  .bottom-nav {
+    position: fixed;
+    /* re-anchor to the card instead of the viewport edge */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 420px;
+    max-width: 420px;
+    border-bottom-left-radius: 32px;
+    border-bottom-right-radius: 32px;
+    z-index: 200;
+  }
+
+  /* Slightly larger interactive targets on wide screens */
+  .icon-circle-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  .nav-item i {
+    font-size: 20px;
+  }
+}
+
+/* ── VERY LARGE SCREENS ( ≥ 1440px ) ────────────────────────────────────── */
+@media (min-width: 1440px) {
+  body {
+    padding: 56px 0 72px;
+  }
+
+  .app {
+    width: 440px;
+    max-width: 440px;
+    max-height: calc(100vh - 112px);
+    border-radius: 36px;
+  }
+
+  .bottom-nav {
+    width: 440px;
+    max-width: 440px;
+    border-bottom-left-radius: 36px;
+    border-bottom-right-radius: 36px;
+  }
+}
+
+/* ── SAFE AREA / NOTCH SUPPORT ───────────────────────────────────────────── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .bottom-nav {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 6px);
+    height: calc(70px + env(safe-area-inset-bottom));
+  }
+
+  @media (max-width: 479px) {
+    .app {
+      padding-bottom: calc(105px + env(safe-area-inset-bottom));
+    }
   }
 }
