@@ -960,9 +960,9 @@ const AppState = {
 
   // 3. Vouchers Data
   defaultVouchers: [
-    { code: 'WELCOME50', title: '50 EGP Welcome Discount', titleAr: 'خصم ترحيبي 50 ج.م', amount: 50, minOrder: 250, status: 'available', expiry: '30 Oct 2026' },
-    { code: 'FEAST50', title: '50% OFF Weekend Feasts', titleAr: 'خصم 50% على الوجبات', percent: 50, maxDiscount: 100, minOrder: 300, status: 'available', expiry: '28 Sep 2026' },
-    { code: 'FREEDEL', title: 'Free Delivery Anywhere', titleAr: 'توصيل مجاني لأي مكان', freeDelivery: true, minOrder: 150, status: 'available', expiry: '15 Oct 2026' },
+    { code: 'WELCOME50', title: '50 EGP Welcome Discount', titleAr: 'خصم ترحيبي 50 ج.م', amount: 50, minOrder: 250, status: 'available', expiry: '30 Nov 2026' },
+    { code: 'FEAST50', title: '50% OFF Weekend Feasts', titleAr: 'خصم 50% على الوجبات', percent: 50, maxDiscount: 100, minOrder: 300, status: 'available', expiry: '31 Dec 2026' },
+    { code: 'FREEDEL', title: 'Free Delivery Anywhere', titleAr: 'توصيل مجاني لأي مكان', freeDelivery: true, minOrder: 150, status: 'available', expiry: '31 Dec 2026' },
     { code: 'SUMMER20', title: '20 EGP Summer Cooler', titleAr: 'خصم 20 ج.م للصيف', amount: 20, minOrder: 100, status: 'used', expiry: '01 Sep 2026' },
     { code: 'LAUNCH100', title: '100 EGP Grand Opening', titleAr: 'خصم 100 ج.م للافتتاح', amount: 100, minOrder: 500, status: 'expired', expiry: '10 Aug 2026' }
   ],
@@ -1505,39 +1505,121 @@ const AppState = {
 
   getAppliedVoucher() {
     try {
-      const data = sessionStorage.getItem('gb_applied_voucher');
+      const data = sessionStorage.getItem('gb_applied_voucher') || localStorage.getItem('gb_applied_voucher');
       return data ? JSON.parse(data) : null;
     } catch (e) {
       return null;
     }
   },
 
-  applyVoucher(code) {
+  isVoucherActive(code) {
+    const applied = this.getAppliedVoucher();
+    if (!applied || !applied.code) return false;
+    return applied.code.toUpperCase().trim() === (code || '').toUpperCase().trim();
+  },
+
+  getAppliedVoucherDiscount(subtotal) {
+    const voucher = this.getAppliedVoucher();
+    if (!voucher) return { amount: 0, isQualified: false, reason: 'none' };
+
+    const minRequired = voucher.minOrder || 0;
+    if (subtotal < minRequired) {
+      return {
+        amount: 0,
+        isQualified: false,
+        minOrder: minRequired,
+        diff: minRequired - subtotal,
+        voucher: voucher
+      };
+    }
+
+    let discountAmount = 0;
+    if (voucher.amount) {
+      discountAmount = voucher.amount;
+    } else if (voucher.percent) {
+      discountAmount = Math.min(voucher.maxDiscount || 999, Math.round((subtotal * voucher.percent) / 100));
+    } else if (voucher.freeDelivery) {
+      discountAmount = 25; // standard delivery fee
+    }
+
+    return {
+      amount: discountAmount,
+      isQualified: true,
+      minOrder: minRequired,
+      diff: 0,
+      voucher: voucher
+    };
+  },
+
+  applyVoucher(code, notify = true) {
     const cleanCode = (code || '').toUpperCase().trim();
+    const isAr = this.getLanguage() === 'ar';
+    if (!cleanCode) {
+      if (notify) showToast(isAr ? 'يرجى إدخال كود الكوبون أولاً' : 'Please enter a coupon code.');
+      return false;
+    }
+
     const vouchers = this.getVouchers();
-    const found = vouchers.find(v => v.code === cleanCode && v.status === 'available');
+    let found = vouchers.find(v => v.code === cleanCode && v.status === 'available');
+
+    // If not found in current vouchers list, check known promo codes or auto-create custom promo
+    if (!found) {
+      found = this.recognizeAndAddPromoCode(cleanCode);
+    }
 
     if (!found) {
-      showToast('Invalid or expired voucher code. ❌');
+      if (notify) showToast(isAr ? 'كود الكوبون غير صالح أو منتهي الصلاحية ❌' : 'Invalid or expired coupon code. ❌');
       return false;
     }
+
+    // Persist as the active coupon
+    sessionStorage.setItem('gb_applied_voucher', JSON.stringify(found));
+    localStorage.setItem('gb_applied_voucher', JSON.stringify(found));
 
     const subtotal = this.getCartSubtotal();
-    if (subtotal < (found.minOrder || 0)) {
-      showToast(`Minimum order of ${this.formatEGP(found.minOrder)} required for ${cleanCode}`);
-      return false;
+    const minRequired = found.minOrder || 0;
+
+    let discountDesc = '';
+    if (found.amount) discountDesc = `${this.formatEGP(found.amount)} OFF`;
+    else if (found.percent) discountDesc = `${found.percent}% OFF`;
+    else if (found.freeDelivery) discountDesc = isAr ? 'توصيل مجاني' : 'Free Delivery';
+
+    if (subtotal > 0 && subtotal >= minRequired) {
+      if (notify) {
+        showToast(isAr 
+          ? `تم تفعيل الكوبون ${cleanCode}! وفرت ${discountDesc} 🎉`
+          : `Coupon ${cleanCode} is now ACTIVE! Saved ${discountDesc} 🎉`);
+      }
+    } else if (subtotal > 0) {
+      const diff = minRequired - subtotal;
+      if (notify) {
+        showToast(isAr 
+          ? `تم تفعيل الكوبون ${cleanCode}! أضف ${this.formatEGP(diff)} للسلة للحصول على الخصم 🛒`
+          : `Coupon ${cleanCode} is ACTIVE! Add ${this.formatEGP(diff)} more to apply discount. 🛒`);
+      }
+    } else {
+      if (notify) {
+        showToast(isAr 
+          ? `تم تفعيل الكوبون ${cleanCode}! (${discountDesc} للطلبات من ${this.formatEGP(minRequired)}) 🎟️`
+          : `Coupon ${cleanCode} is now ACTIVE! (${discountDesc} on orders from ${this.formatEGP(minRequired)}) 🎟️`);
+      }
     }
 
-    sessionStorage.setItem('gb_applied_voucher', JSON.stringify(found));
-    showToast(`Voucher ${cleanCode} applied successfully! 🎉`);
     this.renderCartDrawer();
+    this.updateVoucherBadges();
+    window.dispatchEvent(new CustomEvent('gb_voucher_changed', { detail: { voucher: found, action: 'applied' } }));
     return true;
   },
 
-  removeVoucher() {
+  removeVoucher(notify = true) {
     sessionStorage.removeItem('gb_applied_voucher');
-    showToast('Voucher removed');
+    localStorage.removeItem('gb_applied_voucher');
+    const isAr = this.getLanguage() === 'ar';
+    if (notify) {
+      showToast(isAr ? 'تم إلغاء تفعيل الكوبون.' : 'Coupon deactivated / removed.');
+    }
     this.renderCartDrawer();
+    window.dispatchEvent(new CustomEvent('gb_voucher_changed', { detail: { voucher: null, action: 'removed' } }));
   },
 
   getVouchers() {
@@ -1547,6 +1629,149 @@ const AppState = {
     } catch(e) {
       return this.defaultVouchers;
     }
+  },
+
+  saveVouchers(vouchers) {
+    try {
+      localStorage.setItem(this.STORAGE_KEYS.VOUCHERS, JSON.stringify(vouchers));
+      this.updateVoucherBadges();
+      window.dispatchEvent(new CustomEvent('gb_vouchers_updated'));
+    } catch (e) {
+      console.error('Error saving vouchers', e);
+    }
+  },
+
+  addVoucher(voucherData, autoActivate = true) {
+    if (!voucherData || !voucherData.code) return null;
+    const cleanCode = voucherData.code.trim().toUpperCase();
+    const vouchers = this.getVouchers();
+    const isAr = this.getLanguage() === 'ar';
+
+    let amount = 0;
+    let percent = 0;
+    let freeDelivery = false;
+
+    if (voucherData.type === 'percent' || voucherData.percent) {
+      percent = parseInt(voucherData.percent || voucherData.value || 20, 10);
+    } else if (voucherData.type === 'freeDelivery' || voucherData.freeDelivery) {
+      freeDelivery = true;
+    } else {
+      amount = parseInt(voucherData.amount || voucherData.value || 50, 10);
+    }
+
+    const minOrder = parseInt(voucherData.minOrder || (amount ? amount * 2 : 150), 10);
+    const maxDiscount = parseInt(voucherData.maxDiscount || 120, 10);
+
+    let title = voucherData.title;
+    let titleAr = voucherData.titleAr;
+    if (!title) {
+      if (freeDelivery) {
+        title = 'Free Delivery Promo Coupon';
+        titleAr = 'كوبون توصيل مجاني ترويجي';
+      } else if (percent > 0) {
+        title = `${percent}% OFF Promo Discount`;
+        titleAr = `خصم ${percent}% ترويجي خاص`;
+      } else {
+        title = `${amount} EGP Promo Discount`;
+        titleAr = `خصم ترويجي بقيمة ${amount} ج.م`;
+      }
+    }
+
+    const newVoucher = {
+      code: cleanCode,
+      title: title,
+      titleAr: titleAr,
+      amount: amount,
+      percent: percent,
+      freeDelivery: freeDelivery,
+      maxDiscount: maxDiscount,
+      minOrder: minOrder,
+      status: 'available',
+      expiry: voucherData.expiry || '31 Dec 2026'
+    };
+
+    const existingIndex = vouchers.findIndex(v => v.code === cleanCode);
+    if (existingIndex >= 0) {
+      vouchers[existingIndex] = { ...vouchers[existingIndex], ...newVoucher, status: 'available' };
+    } else {
+      vouchers.unshift(newVoucher);
+    }
+
+    this.saveVouchers(vouchers);
+
+    if (autoActivate) {
+      this.applyVoucher(cleanCode);
+    }
+
+    return newVoucher;
+  },
+
+  recognizeAndAddPromoCode(code) {
+    const cleanCode = (code || '').toUpperCase().trim();
+    if (!cleanCode) return null;
+
+    const PROMO_MAP = {
+      'BURGER25': { title: '25 EGP Off Burgers & Meals', titleAr: 'خصم 25 ج.م على البرجر والوجبات', amount: 25, minOrder: 150 },
+      'BURGER': { title: '20 EGP Off Burger Feast', titleAr: 'خصم 20 ج.م على البرجر', amount: 20, minOrder: 150 },
+      'GOURMET10': { title: '10% OFF Gourmet Orders', titleAr: 'خصم 10% على طلبات جورميه', percent: 10, maxDiscount: 80, minOrder: 200 },
+      'GOURMET': { title: '15% OFF Gourmet Special', titleAr: 'خصم 15% جورميه خاص', percent: 15, maxDiscount: 100, minOrder: 200 },
+      'SAVE50': { title: '50 EGP Super Savings', titleAr: 'وفر 50 ج.م فوراً', amount: 50, minOrder: 250 },
+      'SAVE100': { title: '100 EGP Mega Feast Discount', titleAr: 'خصم ميجا 100 ج.م', amount: 100, minOrder: 450 },
+      'SPECIAL30': { title: '30 EGP Special Chef Discount', titleAr: 'خصم خاص 30 ج.م من الشيف', amount: 30, minOrder: 180 },
+      'RAMADAN': { title: '40 EGP Ramadan Blessing Discount', titleAr: 'خصم رمضان الكريم 40 ج.م', amount: 40, minOrder: 200 },
+      'EID': { title: '50 EGP Eid Mubarak Treat', titleAr: 'عيدية العيد 50 ج.م خصم', amount: 50, minOrder: 250 },
+      'VIP': { title: '60 EGP VIP Member Privilege', titleAr: 'خصم 60 ج.م لأعضاء VIP', amount: 60, minOrder: 300 },
+      'FREEDELIVERY': { title: 'Free Express Delivery', titleAr: 'توصيل مجاني سريع', freeDelivery: true, minOrder: 100 },
+      'SUPER': { title: '35 EGP Super Discount', titleAr: 'خصم سوبر 35 ج.م', amount: 35, minOrder: 180 }
+    };
+
+    let promoData = PROMO_MAP[cleanCode];
+
+    if (!promoData) {
+      const matchNum = cleanCode.match(/\d+/);
+      const val = matchNum ? parseInt(matchNum[0], 10) : 50;
+      if (cleanCode.includes('%') || (matchNum && val <= 50 && (cleanCode.includes('PCT') || cleanCode.includes('PER')))) {
+        promoData = {
+          title: `${val}% OFF Promotional Coupon`,
+          titleAr: `خصم ${val}% ترويجي خاص`,
+          percent: val,
+          maxDiscount: 120,
+          minOrder: 180
+        };
+      } else {
+        const discountAmount = val > 0 && val <= 300 ? val : 50;
+        promoData = {
+          title: `${discountAmount} EGP Special Discount`,
+          titleAr: `خصم خاص بقيمة ${discountAmount} ج.م`,
+          amount: discountAmount,
+          minOrder: Math.max(120, discountAmount * 2)
+        };
+      }
+    }
+
+    return this.addVoucher({
+      code: cleanCode,
+      ...promoData,
+      status: 'available',
+      expiry: '31 Dec 2026'
+    }, false);
+  },
+
+  updateVoucherBadges() {
+    try {
+      const vouchers = this.getVouchers();
+      const activeCount = vouchers.filter(v => v.status === 'available').length;
+      const isAr = this.getLanguage() === 'ar';
+      
+      const badgeVouchers = document.getElementById('badgeVouchers');
+      if (badgeVouchers) {
+        badgeVouchers.textContent = isAr ? `${activeCount} متاحة` : `${activeCount} Active`;
+      }
+      const statVouchers = document.getElementById('statVouchers');
+      if (statVouchers) {
+        statVouchers.textContent = activeCount;
+      }
+    } catch(e) {}
   },
 
   // 7. Favorites & Recently Viewed
@@ -2208,15 +2433,61 @@ const AppState = {
 
     // Vouchers & Discounts
     const voucher = this.getAppliedVoucher();
-    let discountAmount = 0;
-    if (voucher) {
-      if (voucher.amount) discountAmount = voucher.amount;
-      else if (voucher.percent) discountAmount = Math.min(voucher.maxDiscount || 999, Math.round((subtotal * voucher.percent) / 100));
-      else if (voucher.freeDelivery) discountAmount = (subtotal > threshold) ? 0 : 25;
-    }
+    const discountInfo = this.getAppliedVoucherDiscount(subtotal);
+    const discountAmount = discountInfo.amount;
 
-    const deliveryFee = (subtotal >= threshold || (voucher && voucher.freeDelivery)) ? 0 : 25;
+    const hasFreeDeliveryVoucher = voucher && voucher.freeDelivery && discountInfo.isQualified;
+    const deliveryFee = (subtotal >= threshold || hasFreeDeliveryVoucher) ? 0 : 25;
     const finalTotal = Math.max(0, subtotal - discountAmount + deliveryFee);
+
+    // Render Active Coupon UI in Cart Drawer
+    const voucherBox = document.getElementById('cartVoucherBox');
+    if (voucherBox) {
+      if (voucher) {
+        let discountBadgeText = '';
+        if (voucher.amount) discountBadgeText = `${this.formatEGP(voucher.amount)} OFF`;
+        else if (voucher.percent) discountBadgeText = `${voucher.percent}% OFF`;
+        else if (voucher.freeDelivery) discountBadgeText = isAr ? 'توصيل مجاني' : 'Free Delivery';
+
+        voucherBox.innerHTML = `
+          <div class="active-cart-voucher-card">
+            <div class="acv-left">
+              <div class="acv-code-badge-row">
+                <span class="acv-code-tag">${voucher.code}</span>
+                <span class="acv-active-pill"><i class="fa-solid fa-circle-check"></i> ${isAr ? 'كوبون نشط' : 'ACTIVE COUPON'}</span>
+                <span class="acv-save-badge">${discountBadgeText}</span>
+              </div>
+              <p class="acv-sub-text">${isAr ? (voucher.titleAr || voucher.title) : voucher.title}</p>
+              ${!discountInfo.isQualified && subtotal > 0 ? `
+                <div class="acv-warn-msg">
+                  <i class="fa-solid fa-circle-exclamation"></i>
+                  <span>${isAr ? `أضف ${this.formatEGP(discountInfo.diff)} أكثر لتفعيل الخصم (الحد الأدنى ${this.formatEGP(voucher.minOrder)})` : `Add ${this.formatEGP(discountInfo.diff)} more to activate discount (Min. ${this.formatEGP(voucher.minOrder)})`}</span>
+                </div>
+              ` : `
+                <div class="acv-applied-msg">
+                  <i class="fa-solid fa-sparkles"></i>
+                  <span>${isAr ? `تم تطبيق خصم ${this.formatEGP(discountAmount)} بنجاح!` : `Saved ${this.formatEGP(discountAmount)} on your total!`}</span>
+                </div>
+              `}
+            </div>
+            <button class="acv-remove-btn" onclick="AppState.removeVoucher()" title="${isAr ? 'إلغاء الكوبون' : 'Remove coupon'}">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        `;
+      } else {
+        voucherBox.innerHTML = `
+          <div class="voucher-input-group">
+            <i class="fa-solid fa-ticket"></i>
+            <input type="text" id="cartVoucherInput" placeholder="${isAr ? 'أدخل كود الخصم (مثال: WELCOME50)' : 'Enter promo code (e.g. WELCOME50)'}" uppercase />
+            <button onclick="AppState.applyVoucher(document.getElementById('cartVoucherInput').value)">${isAr ? 'تطبيق' : 'Apply'}</button>
+          </div>
+          <div class="voucher-suggestion-pill" onclick="AppState.applyVoucher('WELCOME50')">
+            <i class="fa-solid fa-sparkles"></i> <strong>WELCOME50</strong> ${isAr ? 'متاح لخصم 50 ج.م!' : 'available for 50 EGP OFF!'}
+          </div>
+        `;
+      }
+    }
 
     // Render Items
     container.innerHTML = cart.map((it, idx) => {
@@ -2316,17 +2587,29 @@ const AppState = {
 
       const subtotal = this.getCartSubtotal();
       const voucher = this.getAppliedVoucher();
-      let discountAmount = 0;
-      if (voucher) {
-        if (voucher.amount) discountAmount = voucher.amount;
-        else if (voucher.percent) discountAmount = Math.min(voucher.maxDiscount || 999, Math.round((subtotal * voucher.percent) / 100));
-        else if (voucher.freeDelivery) discountAmount = (subtotal >= 300) ? 0 : 25;
-      }
-      const deliveryFee = (this.selectedDeliveryMethod === 'pickup' || subtotal >= 300 || (voucher && voucher.freeDelivery)) ? 0 : 25;
+      const discountInfo = this.getAppliedVoucherDiscount(subtotal);
+      const discountAmount = discountInfo.amount;
+
+      const hasFreeDelivery = this.selectedDeliveryMethod === 'pickup' || subtotal >= 300 || (voucher && voucher.freeDelivery && discountInfo.isQualified);
+      const deliveryFee = hasFreeDelivery ? 0 : 25;
       const total = Math.max(0, subtotal - discountAmount + deliveryFee);
 
       document.getElementById('reviewSubtotal').textContent = this.formatEGP(subtotal);
-      document.getElementById('reviewDeliveryFee').textContent = deliveryFee === 0 ? 'FREE' : this.formatEGP(deliveryFee);
+      document.getElementById('reviewDeliveryFee').textContent = deliveryFee === 0 ? (this.getLanguage() === 'ar' ? 'مجاناً' : 'FREE') : this.formatEGP(deliveryFee);
+
+      const revDiscRow = document.getElementById('reviewDiscountRow');
+      const revDiscTag = document.getElementById('reviewDiscountCode');
+      const revDiscVal = document.getElementById('reviewDiscountAmount');
+      if (revDiscRow && revDiscVal) {
+        if (voucher && discountAmount > 0) {
+          revDiscRow.style.display = 'flex';
+          if (revDiscTag) revDiscTag.textContent = voucher.code;
+          revDiscVal.textContent = `-${this.formatEGP(discountAmount)}`;
+        } else {
+          revDiscRow.style.display = 'none';
+        }
+      }
+
       document.getElementById('reviewTotal').textContent = this.formatEGP(total);
 
       // Address and payment summary
@@ -2354,13 +2637,10 @@ const AppState = {
     const cart = this.getCart();
     const subtotal = this.getCartSubtotal();
     const voucher = this.getAppliedVoucher();
-    let discountAmount = 0;
-    if (voucher) {
-      if (voucher.amount) discountAmount = voucher.amount;
-      else if (voucher.percent) discountAmount = Math.min(voucher.maxDiscount || 999, Math.round((subtotal * voucher.percent) / 100));
-      else if (voucher.freeDelivery) discountAmount = (subtotal >= 300) ? 0 : 25;
-    }
-    const deliveryFee = (this.selectedDeliveryMethod === 'pickup' || subtotal >= 300 || (voucher && voucher.freeDelivery)) ? 0 : 25;
+    const discountInfo = this.getAppliedVoucherDiscount(subtotal);
+    const discountAmount = discountInfo.amount;
+    const hasFreeDelivery = this.selectedDeliveryMethod === 'pickup' || subtotal >= 300 || (voucher && voucher.freeDelivery && discountInfo.isQualified);
+    const deliveryFee = hasFreeDelivery ? 0 : 25;
     const total = Math.max(0, subtotal - discountAmount + deliveryFee);
     const orderId = '#EGY-' + Math.floor(1000 + Math.random() * 9000);
 
@@ -2381,15 +2661,26 @@ const AppState = {
       subtotal: subtotal,
       discount: discountAmount,
       deliveryFee: deliveryFee,
+      voucherCode: voucher ? voucher.code : null,
       total: total,
       paymentMethod: this.selectedPaymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment',
       isCancellable: true,
       cancelPolicyNote: 'You can cancel within 5 minutes before cooking starts.'
     };
 
+    if (voucher) {
+      const vouchers = this.getVouchers();
+      const vIdx = vouchers.findIndex(v => v.code === voucher.code);
+      if (vIdx >= 0) {
+        vouchers[vIdx].status = 'used';
+        this.saveVouchers(vouchers);
+      }
+    }
+
     localStorage.setItem(this.STORAGE_KEYS.ACTIVE_ORDER, JSON.stringify(newActiveOrder));
     localStorage.removeItem(this.STORAGE_KEYS.CART);
     sessionStorage.removeItem('gb_applied_voucher');
+    localStorage.removeItem('gb_applied_voucher');
 
     this.updateCartBadges();
     this.closeCheckout();
@@ -2517,7 +2808,7 @@ function injectSharedComponents() {
         <div class="drawer-items-list" id="cartItemsList"></div>
 
         <!-- Voucher Input Box -->
-        <div class="cart-voucher-box">
+        <div class="cart-voucher-box" id="cartVoucherBox">
           <div class="voucher-input-group">
             <i class="fa-solid fa-ticket"></i>
             <input type="text" id="cartVoucherInput" placeholder="${isAr ? 'أدخل كود الخصم (مثال: WELCOME50)' : 'Enter promo code (e.g. WELCOME50)'}" uppercase />
@@ -2679,6 +2970,10 @@ function injectSharedComponents() {
 
           <div class="review-totals-card">
             <div class="line"><span>${isAr ? 'المجموع الفرعي' : 'Subtotal'}</span><strong id="reviewSubtotal">0 ${isAr ? 'ج.م' : 'EGP'}</strong></div>
+            <div class="line" id="reviewDiscountRow" style="display:none; color:var(--green);">
+              <span>${isAr ? 'خصم الكوبون' : 'Coupon Discount'} (<strong id="reviewDiscountCode"></strong>)</span>
+              <strong id="reviewDiscountAmount">-0 ${isAr ? 'ج.م' : 'EGP'}</strong>
+            </div>
             <div class="line"><span>${isAr ? 'رسوم التوصيل' : 'Delivery Fee'}</span><strong id="reviewDeliveryFee">25 ${isAr ? 'ج.م' : 'EGP'}</strong></div>
             <div class="line total"><span>${isAr ? 'المبلغ الإجمالي' : 'Total Amount'}</span><strong id="reviewTotal">0 ${isAr ? 'ج.م' : 'EGP'}</strong></div>
           </div>

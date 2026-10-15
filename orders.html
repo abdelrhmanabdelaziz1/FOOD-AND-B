@@ -152,9 +152,13 @@
               <span>Subtotal</span>
               <strong id="activeSubtotal">305 EGP</strong>
             </div>
+            <div class="summary-line" id="activeDiscountRow" style="display:none; color:var(--green)">
+              <span>Coupon Discount (<strong id="activeDiscountCode"></strong>)</span>
+              <strong id="activeDiscountVal">-0 EGP</strong>
+            </div>
             <div class="summary-line">
               <span>Delivery Fee</span>
-              <strong style="color:var(--green)">FREE</strong>
+              <strong id="activeDeliveryFee" style="color:var(--green)">FREE</strong>
             </div>
             <div class="summary-line total-highlight">
               <span>Total Paid</span>
@@ -509,6 +513,25 @@
       }
 
       document.getElementById('activeSubtotal').textContent = AppState.formatEGP(order.subtotal);
+      
+      const discRow = document.getElementById('activeDiscountRow');
+      const discTag = document.getElementById('activeDiscountCode');
+      const discVal = document.getElementById('activeDiscountVal');
+      if (discRow && discVal) {
+        if (order.discount && order.discount > 0) {
+          discRow.style.display = 'flex';
+          if (discTag) discTag.textContent = order.voucherCode || (isAr ? 'كوبون' : 'COUPON');
+          discVal.textContent = `-${AppState.formatEGP(order.discount)}`;
+        } else {
+          discRow.style.display = 'none';
+        }
+      }
+
+      const delFeeEl = document.getElementById('activeDeliveryFee');
+      if (delFeeEl) {
+        delFeeEl.textContent = (!order.deliveryFee || order.deliveryFee === 0) ? (isAr ? 'مجاناً' : 'FREE') : AppState.formatEGP(order.deliveryFee);
+      }
+
       document.getElementById('activeTotal').textContent = AppState.formatEGP(order.total);
 
       // Cancel button status
@@ -561,6 +584,10 @@
             date: isAr ? 'اليوم، الآن' : 'Today, Just Now',
             status: isAr ? 'تم التوصيل بنجاح ✅' : 'Delivered ✅',
             items: order.items,
+            subtotal: order.subtotal,
+            discount: order.discount || 0,
+            deliveryFee: order.deliveryFee || 0,
+            voucherCode: order.voucherCode || null,
             total: order.total,
             rated: false
           });
@@ -628,6 +655,11 @@
             <div class="past-total">
               <span>${isAr ? 'المجموع المدفوع' : 'Paid Total'}</span>
               <strong>${AppState.formatEGP(o.total)}</strong>
+              ${o.discount && o.discount > 0 ? `
+                <span style="display:block; font-size:11px; color:var(--green); font-weight:700; margin-top:2px;">
+                  <i class="fa-solid fa-ticket"></i> ${isAr ? 'وفرت بالكوبون:' : 'Saved with coupon:'} -${AppState.formatEGP(o.discount)} ${o.voucherCode ? '(' + o.voucherCode + ')' : ''}
+                </span>
+              ` : ''}
             </div>
             <div class="past-actions-group">
               <button class="rate-order-btn" onclick="openRatingModal('${o.id}')">
