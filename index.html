@@ -59,13 +59,13 @@
     </section>
 
     <!-- 3. SEARCH -->
-    <section class="search-discovery-section">
-      <div class="search-bar">
+    <section class="search-discovery-section" style="position:relative;">
+      <div class="search-bar" id="searchBarWrapper">
         <i class="fa-solid fa-magnifying-glass search-icon"></i>
-        <input 
-          type="text" 
-          id="searchInput" 
-          placeholder="Search burgers, pizzas, wings, deals..." 
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search burgers, pizzas, wings, deals..."
           autocomplete="off"
         />
         <button class="clear-search-btn" id="clearSearchBtn" aria-label="Clear search" style="display: none;">
@@ -75,6 +75,9 @@
           <i class="fa-solid fa-sliders"></i>
         </button>
       </div>
+
+      <!-- Live Search Dropdown -->
+      <div id="searchDropdown" class="search-dropdown" style="display:none;"></div>
 
       <!-- Quick Suggested Searches -->
       <div class="search-suggestions" id="searchSuggestions">
@@ -87,6 +90,78 @@
         <button class="suggest-pill" data-tag-en="Lotus Cheesecake" data-tag-ar="تشيز كيك لوتس" onclick="applySearchTag(this)">Lotus Cheesecake</button>
       </div>
     </section>
+
+    <style>
+      .search-dropdown {
+        position: absolute;
+        top: calc(100% - 8px);
+        left: 0; right: 0;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: 0 16px 40px rgba(0,0,0,0.13);
+        z-index: 500;
+        overflow: hidden;
+        max-height: 340px;
+        overflow-y: auto;
+        scrollbar-width: none;
+      }
+      .search-dropdown::-webkit-scrollbar { display: none; }
+      .sdrop-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border-light);
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .sdrop-item:last-child { border-bottom: none; }
+      .sdrop-item:hover { background: var(--surface-alt); }
+      .sdrop-img {
+        width: 44px; height: 44px;
+        border-radius: 10px;
+        object-fit: cover;
+        flex-shrink: 0;
+      }
+      .sdrop-info { flex: 1; min-width: 0; }
+      .sdrop-name {
+        font-size: 13px; font-weight: 700;
+        color: var(--text);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .sdrop-price {
+        font-size: 11px; color: var(--primary); font-weight: 700; margin-top: 2px;
+      }
+      .sdrop-add-btn {
+        background: var(--primary-gradient);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: opacity 0.15s;
+      }
+      .sdrop-add-btn:hover { opacity: 0.88; }
+      .sdrop-empty {
+        padding: 20px;
+        text-align: center;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .sdrop-count {
+        padding: 8px 14px 6px;
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        border-bottom: 1px solid var(--border-light);
+      }
+    </style>
 
     <!-- 4. FLASH SALE, DEAL OF THE DAY & SPECIAL OFFERS (CAROUSEL) -->
     <section class="home-carousel-section" aria-label="Featured Feasts Carousel">
@@ -715,6 +790,39 @@
       // Search input
       const searchInput = document.getElementById('searchInput');
       const clearBtn = document.getElementById('clearSearchBtn');
+      const dropdown = document.getElementById('searchDropdown');
+
+      function renderSearchDropdown(query) {
+        if (!dropdown) return;
+        if (!query || query.length < 1) {
+          dropdown.style.display = 'none';
+          return;
+        }
+        const isAr = AppState.getLanguage() === 'ar';
+        const results = AppState.searchProducts(query, 'all', 'all').slice(0, 8);
+        dropdown.style.display = 'block';
+        if (results.length === 0) {
+          dropdown.innerHTML = `<div class="sdrop-empty">${isAr ? 'لا توجد نتائج لـ "' + query + '"' : 'No results for "' + query + '"'}</div>`;
+          return;
+        }
+        dropdown.innerHTML =
+          `<div class="sdrop-count">${results.length}${results.length === 8 ? '+' : ''} ${isAr ? 'نتيجة' : 'results'}</div>` +
+          results.map(item => {
+            const name = isAr ? (item.nameAr || item.name) : item.name;
+            return `
+              <div class="sdrop-item" onclick="window.location.href='product-detail.html?id=${item.id}'">
+                <img class="sdrop-img" src="${item.image}" alt="${name}" />
+                <div class="sdrop-info">
+                  <div class="sdrop-name">${name}</div>
+                  <div class="sdrop-price">${AppState.formatEGP(item.basePrice)}</div>
+                </div>
+                <button class="sdrop-add-btn" onclick="event.stopPropagation(); quickAddToCartItem('${item.id}', this)">
+                  ${isAr ? '+ أضف' : '+ Add'}
+                </button>
+              </div>`;
+          }).join('');
+      }
+
       if (searchInput) {
         searchInput.addEventListener('input', () => {
           const val = searchInput.value.trim();
@@ -722,19 +830,38 @@
           if (!val) {
             document.querySelectorAll('.suggest-pill').forEach(p => p.classList.remove('active'));
           }
+          renderSearchDropdown(val);
           renderProductsGrid();
         });
         searchInput.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
+            dropdown.style.display = 'none';
             searchInput.blur();
           }
+          if (e.key === 'Escape') {
+            dropdown.style.display = 'none';
+            searchInput.value = '';
+            if (clearBtn) clearBtn.style.display = 'none';
+            renderProductsGrid();
+          }
+        });
+        searchInput.addEventListener('focus', () => {
+          if (searchInput.value.trim().length > 0) renderSearchDropdown(searchInput.value.trim());
         });
       }
+
+      // Close dropdown on outside click
+      document.addEventListener('click', (e) => {
+        if (dropdown && !dropdown.contains(e.target) && e.target !== searchInput) {
+          dropdown.style.display = 'none';
+        }
+      });
 
       if (clearBtn) {
         clearBtn.addEventListener('click', () => {
           searchInput.value = '';
           clearBtn.style.display = 'none';
+          if (dropdown) dropdown.style.display = 'none';
           document.querySelectorAll('.suggest-pill').forEach(p => p.classList.remove('active'));
           searchInput.focus();
           renderProductsGrid();
